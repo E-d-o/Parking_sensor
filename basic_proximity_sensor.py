@@ -2,6 +2,11 @@
 import RPi.GPIO as GPIO
 import time
 import signal
+import os
+import influxdb_client
+
+
+from db_manager import DbManager
 
 # Configurazione
 TRIG_PIN = 16  # GPIO 23 
@@ -15,7 +20,7 @@ MIN_DETECTABLE_DISTANCE=2
 TRIG_TIME=0.00001 #needs 10 us of HIGH in order to begin measuring
 
 
-print("💡 TEST PROSSIMITA")
+print("TEST PROSSIMITA")
 print("=" * 40)
 def signal_handler(sig, frame):
     """Gestisce CTRL+C"""
@@ -95,7 +100,15 @@ def control_warning(buzz_pin, threshold, distance_cm):
 try:
 
     setup_gpio()
+    db_manager=DbManager()
+
+    
+    
+    
+
     count=0
+    
+
     running = True
 
     while(running):
@@ -113,6 +126,8 @@ try:
 
             control_warning(BUZZ_PIN, THRESHOLD, distance_cm)
             print(f"La distanza misurata' e':{distance_cm:.2f} cm")
+            db_manager.write(measurement_name="ciao",tag=("casa","mia"),field=("distanza_in_cm",distance_cm))
+
         else:
             print("Misurazione fuori dal range normale,ignoro...")
 
