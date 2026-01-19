@@ -1,11 +1,14 @@
 from dataclasses import dataclass,field
 import os
-from typing import Any, ClassVar,Optional, Tuple
+from typing import Any, ClassVar, Dict,Optional, Tuple
 from influxdb_client.client.influxdb_client import InfluxDBClient
 
 from influxdb_client.client.write_api import SYNCHRONOUS,WriteApi
 from influxdb_client.client.write.point import Point
+from dotenv import load_dotenv
 
+
+load_dotenv()
 
 
 @dataclass
@@ -48,24 +51,27 @@ class DbManager:
         self.set_client()
         self.set_write_api()
 
-    def write_point(self,measurement_name:str,tag:Tuple[str,str],field:Tuple[str,Any]):
-        """Preconditions: setup already done"""
+    def write_point(self, measurement_name: str, tags: Dict[str, str], fields: Dict[str, float | int | bool | str]):
+        """Write a point with multiple tags and fields."""
         assert self.write_api is not None, "setup_for_write must be called first"
-        tag_key,tag_value=tag
-        field_key,field_value=field
-        point=Point(measurement_name).tag(tag_key,tag_value).field(field_key, field_value)
-        self.write_api.write(bucket=self.bucket,org=self.org,record=point)
-
+        
+        point = Point(measurement_name)
+        for tag_key, tag_value in tags.items():
+            point = point.tag(tag_key, str(tag_value))  # Tags sono sempre stringhe
+        for field_key, field_value in fields.items():
+            point = point.field(field_key, field_value)
+        
+        self.write_api.write(bucket=self.bucket, org=self.org, record=point)
     def ensure_write_ready(self):
         if(self.client is not None and self.write_api is not None):
             return True
         return False
 
-    def write(self,measurement_name:str,tag:Tuple[str,str],field:Tuple[str,Any]):
-        if(not self.ensure_write_ready()):
+    def write(self, measurement_name: str, tags: Dict[str, str], fields: Dict[str, float | int | bool | str]):
+        """Convenience method to ensure setup and write a point."""
+        if not self.ensure_write_ready():
             self.setup_for_write()
-        self.write_point(measurement_name=measurement_name,tag=tag,field=field)
-
+        self.write_point(measurement_name=measurement_name, tags=tags, fields=fields)
     
 
     @staticmethod

@@ -2,8 +2,7 @@
 import RPi.GPIO as GPIO
 import time
 import signal
-import os
-import influxdb_client
+
 
 
 from db_manager import DbManager
@@ -57,13 +56,13 @@ def calculate_distance(TRIG_PIN, ECHO_PIN,BUZZ_PIN):
     GPIO.output(TRIG_PIN,GPIO.LOW)
     start_time=end_time=0
 
-    if(does_signal_change(ECHO_PIN,0)):
+    if(does_signal_change(ECHO_PIN,GPIO.LOW)):
     
         start_time=time.monotonic()
     else:
         return None
 
-    if(does_signal_change(ECHO_PIN,1)):
+    if(does_signal_change(ECHO_PIN,GPIO.HIGH)):
         end_time=time.monotonic()
     else:
         return None
@@ -80,20 +79,23 @@ def calculate_distance(TRIG_PIN, ECHO_PIN,BUZZ_PIN):
     return distance_cm
 
 def does_signal_change(ECHO_PIN,signal_value):
-    timeout=0.1
+    timeout=0.05
     begin_waiting=time.monotonic()
     while GPIO.input(ECHO_PIN) == signal_value:
-        if(time.monotonic()-begin_waiting>=timeout):
+        if(time.monotonic()-begin_waiting>=timeout): #Signal doesn't change for some reason
+            #print("Timeout del segnale, non ha cambiato!!")
             return False
-    
+    #print(f"Signal changed dopo {(time.monotonic()-begin_waiting)*1000:.2f}ms, era {signal_value}")
     return True
 
 def control_warning(buzz_pin, threshold, distance_cm):
     if(distance_cm<threshold):
         print("Attenzione, distanza pericolosa rilevata!!")
         GPIO.output(buzz_pin,GPIO.HIGH)
+        return True
     else:
         GPIO.output(buzz_pin,GPIO.LOW)
+        return False
 
 
 
@@ -101,8 +103,15 @@ try:
 
     setup_gpio()
     db_manager=DbManager()
-
-    
+    db_manager.write(
+        measurement_name="config",
+        tags={"mounted_on": "car", "location": "car_plate_back"},
+        fields={
+            "threshold": THRESHOLD,
+            "min_detectable_distance": MIN_DETECTABLE_DISTANCE,
+            "max_detectable_distance": MAX_DETECTABLE_DISTANCE
+        }
+    )
     
     
 
@@ -119,17 +128,18 @@ try:
 
 
         if(distance_cm is None):
-            print("Nessun oggetto rilevato")
+            print("Errore di misurazione...")
             continue
 
         if(distance_cm>=MIN_DETECTABLE_DISTANCE and distance_cm<=MAX_DETECTABLE_DISTANCE):
 
-            control_warning(BUZZ_PIN, THRESHOLD, distance_cm)
+            is_warning=control_warning(BUZZ_PIN, THRESHOLD, distance_cm)
             print(f"La distanza misurata' e':{distance_cm:.2f} cm")
-            db_manager.write(measurement_name="ciao",tag=("casa","mia"),field=("distanza_in_cm",distance_cm))
-
-        else:
-            print("Misurazione fuori dal range normale,ignoro...")
+            db_manager.write(measurement_name="measurements",tags={"mounted_on":"car","location":"car_plate_back"},fields={"distanza_in_cm":distance_cm,})#change in english
+        else: #i enter only if the signal i got was the echo signal from the sensor , signaling that there is nothing to measure
+            print("Misurazione fuori dal range normale,scrivo distanza invalida")
+            print(f"La distanza misurata' e':{distance_cm:.2f} cm")
+            db_manager.write(measurement_name="measurements_errors",tags={"mounted_on":"car","location":"car_plate_back"},fields={"distanza_in_cm":distance_cm,"error_type":"out_of_range"})
 
 
         print("..."*40)
@@ -139,7 +149,7 @@ try:
         time.sleep(MEASURE_DELAY)
 
 except Exception as e:
-    print(f"Errore {e}")
+    print(f"Error {e}")
 finally:
     GPIO.cleanup()
     print("GPIO puliti")
