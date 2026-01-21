@@ -6,6 +6,8 @@ import signal
 
 
 from db_manager import DbManager
+from datetime import datetime
+import schedule
 
 # Configurazione
 TRIG_PIN = 16  # GPIO 23 
@@ -97,23 +99,30 @@ def control_warning(buzz_pin, threshold, distance_cm):
         GPIO.output(buzz_pin,GPIO.LOW)
         return False
 
+def write_config():
+    fixed_timestamp=datetime(2026, 1, 1).isoformat()
+
+
+    db_manager.write(
+        measurement_name="config",
+        tags={"mounted_on": "car", "location": "car_plate_back"},
+        
+        fields={
+            "threshold": THRESHOLD,
+            "min_detectable_distance": MIN_DETECTABLE_DISTANCE,
+            "max_detectable_distance": MAX_DETECTABLE_DISTANCE
+        },
+        time=fixed_timestamp
+    )
 
 
 try:
 
     setup_gpio()
     db_manager=DbManager()
-    db_manager.write(
-        measurement_name="config",
-        tags={"mounted_on": "car", "location": "car_plate_back"},
-        fields={
-            "threshold": THRESHOLD,
-            "min_detectable_distance": MIN_DETECTABLE_DISTANCE,
-            "max_detectable_distance": MAX_DETECTABLE_DISTANCE
-        }
-    )
     
-    
+    write_config()
+    schedule.every(1).hours.do(write_config)
 
     count=0
     
@@ -124,6 +133,7 @@ try:
         
 
         print(f"Misurazione numero {count}")
+        print(f"threshold e {THRESHOLD}")
         distance_cm=calculate_distance(TRIG_PIN, ECHO_PIN,BUZZ_PIN)
 
 
@@ -134,24 +144,24 @@ try:
         if(distance_cm>=MIN_DETECTABLE_DISTANCE and distance_cm<=MAX_DETECTABLE_DISTANCE):
 
             is_warning=control_warning(BUZZ_PIN, THRESHOLD, distance_cm)
-            print(f"La distanza misurata' e':{distance_cm:.2f} cm")
             db_manager.write(measurement_name="measurements",tags={"mounted_on":"car","location":"car_plate_back"},fields={"distanza_in_cm":distance_cm,})#change in english
         else: #i enter only if the signal i got was the echo signal from the sensor , signaling that there is nothing to measure
             print("Misurazione fuori dal range normale,scrivo distanza invalida")
-            print(f"La distanza misurata' e':{distance_cm:.2f} cm")
             db_manager.write(measurement_name="measurements_errors",tags={"mounted_on":"car","location":"car_plate_back"},fields={"distanza_in_cm":distance_cm,"error_type":"out_of_range"})
-
-
+        
+        print(f"La distanza misurata' e':{distance_cm:.2f} cm")
         print("..."*40)
 
 
         count+=1
+        schedule.run_pending()
         time.sleep(MEASURE_DELAY)
 
 except Exception as e:
-    print(f"Error {e}")
+    print(f"Error: {e}")
 finally:
     GPIO.cleanup()
+    db_manager.close()
     print("GPIO puliti")
 
 
