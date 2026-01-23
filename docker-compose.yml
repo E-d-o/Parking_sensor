@@ -15,10 +15,15 @@ services:
     
 
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      
+      - GF_SECURITY_ADMIN_USER=$GRAFANA_ADMIN_USER
+      - GF_SECURITY_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD
+      - INFLUXDB_ORG=$INFLUXDB_ORG
+      - INFLUXDB_TOKEN=$INFLUXDB_TOKEN
+      - INFLUXDB_BUCKET=$INFLUXDB_BUCKET
 
+      
+    depends_on:
+      - influxdb
 
 
   influxdb:
