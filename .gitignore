@@ -1,3 +1,8 @@
 
 __pycache__/
 .env
+
+.env.influxdb2*
+!.env.influxdb2*.example
+
+#non voglio ignorare file di tipo .env.influxdb2*.example
