@@ -1,5 +1,5 @@
 
-FROM balenalib/raspberry-pi-python:3.11
+FROM python:3.11-slim
 
 WORKDIR /app
 
