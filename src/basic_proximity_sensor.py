@@ -26,7 +26,7 @@ print("=" * 40)
 def signal_handler(sig, frame):
     """Gestisce CTRL+C"""
     global running
-    print("\nRicevuto CTRL+C, fermo...")
+    print(f"\nRicevuto segnale {sig} :{signal.Signals(sig).name} fermo...")
     running = False
     
 
@@ -34,6 +34,7 @@ def signal_handler(sig, frame):
 
 
 signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM,signal_handler)
 
 # Setup
 def setup_gpio():
