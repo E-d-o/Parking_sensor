@@ -67,10 +67,15 @@ services:
       context: .
       dockerfile: Dockerfile 
     container_name: sensor_script
+    privileged: true  # accesso root per pin GPIO
+    devices: # accesso ai dispositivi GPIO
+    - /dev/gpiomem:/dev/gpiomem
     restart: unless-stopped
     volumes:
       - ./src/:/app/src  
     environment:
+
+      - PYTHONUNBUFFERED=1 #per avere print nei logs in tempo reale, non buffered
       - INFLUXDB_URL=$INFLUXDB_URL
       - INFLUXDB_ORG=$INFLUXDB_ORG
       - INFLUXDB_TOKEN=$INFLUXDB_TOKEN
