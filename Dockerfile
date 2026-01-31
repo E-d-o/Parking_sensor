@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN apt update && apt install -y \
     gcc\
     libc6-dev\
-    make 
+    make
 RUN pip install -r requirements.txt
 
 
