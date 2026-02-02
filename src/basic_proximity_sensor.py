@@ -93,7 +93,7 @@ def control_warning(buzz_pin, threshold, distance_cm):
         return False
 
 
-def write_config():
+def write_config(db_manager: DbManager):
     fixed_timestamp = datetime(2026, 1, 1).isoformat()
 
     db_manager.write(
@@ -108,24 +108,29 @@ def write_config():
     )
 
 
+db_manager = None
 try:
     db_manager = DbManager()
+    print("Connessione al Database effettuata")
+
+except ConnectionError as e:
+    print(f"Impossibile connettersi al Database, ottenuto {e}")
+    print("Continuo con l'esecuzione delle sole componenti elettroniche")
 except Exception as e:
     print(f"Impossibile inizializzare Database, ottenuto {e}")
     exit()
 
 try:
     setup_gpio()
-
-    write_config()
-    schedule.every(1).hours.do(write_config)
+    if db_manager is not None:
+        write_config(db_manager=db_manager)
+        schedule.every(1).hours.do(lambda: write_config(db_manager=db_manager))  # pyright: ignore[reportArgumentType]
 
     count = 0
-
     running = True
 
     while running:
-        print(f"Misurazione numero {count}")
+        print(f"Misurazione numero {count}")  # pyright: ignore[reportCallIssue]
         print(f"threshold e {THRESHOLD}")
         distance_cm = calculate_distance(TRIG_PIN, ECHO_PIN, BUZZ_PIN)
 
@@ -138,20 +143,26 @@ try:
             and distance_cm <= MAX_DETECTABLE_DISTANCE
         ):
             is_warning = control_warning(BUZZ_PIN, THRESHOLD, distance_cm)
-            db_manager.write(
-                measurement_name="measurements",
-                tags={"mounted_on": "car", "location": "car_plate_back"},
-                fields={
-                    "distanza_in_cm": distance_cm,
-                },
-            )  # change in english
+            if db_manager is not None:
+                db_manager.write(
+                    measurement_name="measurements",
+                    tags={"mounted_on": "car", "location": "car_plate_back"},
+                    fields={
+                        "distanza_in_cm": distance_cm,
+                    },
+                )
         else:  # i enter only if the signal i got was the echo signal from the sensor , signaling that there is nothing to measure
             print("Misurazione fuori dal range normale,scrivo distanza invalida")
-            db_manager.write(
-                measurement_name="measurements_errors",
-                tags={"mounted_on": "car", "location": "car_plate_back"},
-                fields={"distanza_in_cm": distance_cm, "error_type": "out_of_range"},
-            )
+
+            if db_manager is not None:
+                db_manager.write(
+                    measurement_name="measurements_errors",
+                    tags={"mounted_on": "car", "location": "car_plate_back"},
+                    fields={
+                        "distanza_in_cm": distance_cm,
+                        "error_type": "out_of_range",
+                    },
+                )
 
         print(f"La distanza misurata' e':{distance_cm:.2f} cm")
         print("..." * 40)
@@ -161,8 +172,9 @@ try:
         time.sleep(MEASURE_DELAY)
 
 except Exception as e:
-    print(f"Error: {e}")
+    print(f"Error: {e.__class__.__name__, e}")
 finally:
     GPIO.cleanup()
-    db_manager.close()
+    if db_manager is not None:
+        db_manager.close()
     print("GPIO puliti")

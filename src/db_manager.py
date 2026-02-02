@@ -25,11 +25,24 @@ class DbManager:
     client: Optional[InfluxDBClient] = field(default=None)
     write_api: Optional[WriteApi] = field(default=None)
 
+    def __post_init__(self):
+        self.setup_for_write()
+        try:
+            self.write(
+                measurement_name="test",
+                tags={"type": "write_test"},
+                fields={"num": 0},
+            )
+        except Exception as e:
+            raise ConnectionError(f"Cannot instantiate connection to InfluxDB: {e}")
+
     # Store the URL of your InfluxDB instance
     def set_client(self):
-        client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
-
-        self.client = client
+        try:
+            client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
+            self.client = client
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect to InfluxDB: {e}")
 
     def set_write_api(self):
         if self.client is None:
@@ -41,11 +54,11 @@ class DbManager:
         self.write_api = write_api
 
     def setup_for_write(self):
-        """Wrapper method, gets ready for writing to db"""
+        """Helper method, gets ready for writing to db"""
         self.set_client()
         self.set_write_api()
 
-    def write_point(
+    def write(
         self,
         measurement_name: str,
         tags: Dict[str, str],
@@ -71,20 +84,6 @@ class DbManager:
             return True
         return False
 
-    def write(
-        self,
-        measurement_name: str,
-        tags: Dict[str, str],
-        fields: Dict[str, float | int | bool | str],
-        time: Optional[datetime | str] = None,
-    ):
-        """Convenience method to ensure setup and write a point."""
-        if not self.ensure_write_ready():
-            self.setup_for_write()
-        self.write_point(
-            measurement_name=measurement_name, tags=tags, fields=fields, time=time
-        )
-
     def close(self):
         if self.ensure_write_ready():
             assert self.write_api is not None, "write_api is none, cannot close"
@@ -96,12 +95,12 @@ class DbManager:
 
             print("Chiusa connessione con successo")
         else:
-            raise Exception("Cannot close a connection which hasn't been opened")
+            raise RuntimeError("Cannot close a connection which hasn't been opened")
 
     @staticmethod
     def get_env_variable(name: str) -> str:
         """Get token from environment variable."""
         env_var = os.getenv(name)
         if not env_var:
-            raise ValueError(f"{name} environment variable is not set")
+            raise ConnectionError(f"{name} environment variable is not set")
         return env_var
