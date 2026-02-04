@@ -81,9 +81,9 @@ sudo systemctl stop parking_sensor.service
 
 # Usage
 
-You can access the dashboard by visiting http://localhost:3000 in your web browser (replace localhost with the IP address of your Raspberry Pi if you are accessing it remotely).
-There Grafana will ask you to input the username and password, the default credentials are specified in the .env file, which are `admin` and `admin`.
+You can access the dashboard by visiting `http://localhost:3000` in your web browser (replace localhost with the IP address of your Raspberry Pi if you are accessing it remotely).
+There Grafana will ask you to input the username and password, the default credentials are specified in the `.env` file, which are `admin` and `admin`.
 
 # Changing the default credentials
 
-You can change the default credentials by editing the .env file and changing the values of the admin credentials and also the InfluxDB token.
+You can change the default credentials by editing the `.env` file and changing the values of the admin credentials and also the InfluxDB token.
