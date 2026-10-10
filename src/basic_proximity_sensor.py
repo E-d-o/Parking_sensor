@@ -18,7 +18,7 @@ SOUND_SPEED = 34300
 MEASURE_DELAY = 0.5
 _temp= os.getenv("THRESHOLD")
 if not _temp:
-    raise ConnectionError(f"{_temp} environment variable is not set")
+    raise ConnectionError(f"THRESHOLD environment variable is not set")
   
 THRESHOLD:int=int(_temp)
 

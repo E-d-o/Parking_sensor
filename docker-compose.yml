@@ -62,12 +62,10 @@ services:
         restart: unless-stopped
         volumes:
             - ./src/:/app/src
-        environment:
-            - PYTHONUNBUFFERED=1 #per avere print nei logs in tempo reale, non buffered
-            - INFLUXDB_URL=$INFLUXDB_URL
-            - INFLUXDB_ORG=$INFLUXDB_ORG
-            - INFLUXDB_TOKEN=$INFLUXDB_TOKEN
-            - INFLUXDB_BUCKET=$INFLUXDB_BUCKET
+        env_file:
+            - ./.env
+
+
         depends_on:
             influxdb:
                 condition: service_healthy
