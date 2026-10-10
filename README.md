@@ -1,6 +1,12 @@
-# Parking_sensor
+# Description
 
-A raspberry pi project for Iot course at the University of Udine.
+A raspberry pi project for Iot course at the University of Udine, using the HC-SR04.
+The Raspberry Pi will also power an LED and a buzzer which will respectively light up and make a noise when the distance reading is below a certain configurable threshold.
+
+# Visualization
+The grafana dashboard will look like the one in the following image:
+![data visualization](./images/grafana_measurements_example.png)
+
 
 # Installation
 Before installing, make sure to wire the raspberry as described in the wiring diagram below:
@@ -82,7 +88,7 @@ sudo systemctl stop parking_sensor.service
 
 # Usage
 
-You can access the dashboard by visiting `http://localhost:3000` in your web browser (replace localhost with the IP address of your Raspberry Pi if you are accessing it remotely).
+You can access the dashboard by visiting `http://localhost:3000` in your web browser (replace localhost with the IP address of your Raspberry Pi if you are accessing it from another device in the same network).
 There Grafana will ask you to input the username and password, the default credentials are specified in the `.env` file, which are `admin` and `admin`.
 
 # Changing the default credentials
