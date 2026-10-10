@@ -1,3 +1,4 @@
+import os
 import signal
 import time
 from datetime import datetime
@@ -7,13 +8,20 @@ import schedule
 
 from db_manager import DbManager
 
+
+
 # Configurazione
 TRIG_PIN = 16  # GPIO 23
 ECHO_PIN = 18  # GPIO 24
 BUZZ_PIN = 22  # GPIO 25
 SOUND_SPEED = 34300
 MEASURE_DELAY = 0.5
-THRESHOLD = 50
+_temp= os.getenv("THRESHOLD")
+if not _temp:
+    raise ConnectionError(f"{_temp} environment variable is not set")
+  
+THRESHOLD:int=int(_temp)
+
 MAX_DETECTABLE_DISTANCE = 400
 MIN_DETECTABLE_DISTANCE = 2
 TRIG_TIME = 0.00001  # needs 10 us of HIGH in order to begin measuring
