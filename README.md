@@ -4,7 +4,7 @@ A raspberry pi project for Iot course at the University of Udine.
 
 # Installation
 Before installing, make sure to wire the raspberry as described in the wiring diagram below:
-![wiring diagram](./images/kicad_schematic_image)
+![wiring diagram](./images/kicad_schematic_image.png)
 In order to install the project, Docker is required.
 
 ## Installation steps
